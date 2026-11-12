@@ -1,3 +1,4 @@
+
 package org.example.supermercadojotajotas.service;
 
 import org.example.supermercadojotajotas.model.Carrito;
@@ -10,6 +11,7 @@ import org.example.supermercadojotajotas.structures.RegistroEntregas;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.HashMap;
 
 @Service
@@ -49,6 +51,10 @@ public class ProductoService {
         return inventario;
     }
 
+    public Collection<Producto> listarProductos() {
+        return inventario.listarProductos();
+    }
+
     public boolean agregarAlCarrito(String nombre, int cantidad) {
 
         Integer stock = inventario.buscarStock(nombre);
@@ -73,9 +79,9 @@ public class ProductoService {
         for (String nombre : carrito.getProductos().keySet()) {
 
             int cantidad = carrito.getProductos().get(nombre);
-            int stockActual = inventario.buscarStock(nombre);
+            Integer stockActual = inventario.buscarStock(nombre);
 
-            if (cantidad > stockActual) {
+            if (stockActual == null || cantidad > stockActual) {
                 return false;
             }
         }
@@ -85,10 +91,7 @@ public class ProductoService {
             int cantidad = carrito.getProductos().get(nombre);
             int stockActual = inventario.buscarStock(nombre);
 
-            inventario.actualizarStock(
-                    nombre,
-                    stockActual - cantidad
-            );
+            inventario.actualizarStock(nombre, stockActual - cantidad);
         }
 
         carrito.vaciar();

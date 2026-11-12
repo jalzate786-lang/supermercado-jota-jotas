@@ -1,0 +1,159 @@
+
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Supermercado Jota Jota</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            background: #f4f4f4;
+        }
+
+        h1, h2 {
+            color: #263238;
+        }
+
+        section {
+            background: white;
+            padding: 20px;
+            margin-bottom: 25px;
+            border-radius: 8px;
+        }
+
+        input, button {
+            padding: 9px;
+            margin: 5px;
+        }
+
+        button {
+            cursor: pointer;
+            background: #263238;
+            color: white;
+            border: none;
+            border-radius: 4px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+            text-align: left;
+        }
+
+        .mensaje {
+            color: #176b35;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+<h1>Supermercado Jota Jota</h1>
+<p>Administración de inventario y compras</p>
+
+<p class="mensaje" th:if="${mensaje}" th:text="${mensaje}"></p>
+
+<section>
+    <h2>Registrar producto</h2>
+
+    <form action="/productos/registrar" method="post">
+
+        <input type="number" name="id"
+               placeholder="ID" required>
+
+        <input type="text" name="nombre"
+               placeholder="Nombre" required>
+
+        <input type="number" name="precio"
+               placeholder="Precio" step="0.01"
+               min="0.01" required>
+
+        <input type="number" name="stock"
+               placeholder="Stock" min="0" required>
+
+        <button type="submit">Registrar producto</button>
+
+    </form>
+</section>
+
+<section>
+    <h2>Inventario</h2>
+
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Producto</th>
+            <th>Precio</th>
+            <th>Stock</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        <tr th:each="producto : ${productos}">
+            <td th:text="${producto.id}"></td>
+            <td th:text="${producto.nombre}"></td>
+            <td th:text="${producto.precio}"></td>
+            <td th:text="${producto.stock}"></td>
+        </tr>
+        </tbody>
+    </table>
+
+    <p th:if="${#lists.isEmpty(productos)}">
+        Todavía no hay productos registrados.
+    </p>
+</section>
+
+<section>
+    <h2>Agregar al carrito</h2>
+
+    <form action="/carrito/agregar" method="post">
+
+        <input type="text" name="nombre"
+               placeholder="Nombre del producto" required>
+
+        <input type="number" name="cantidad"
+               placeholder="Cantidad" min="1" required>
+
+        <button type="submit">Agregar al carrito</button>
+
+    </form>
+</section>
+
+<section>
+    <h2>Carrito de compras</h2>
+
+    <table>
+        <thead>
+        <tr>
+            <th>Producto</th>
+            <th>Cantidad</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        <tr th:each="producto : ${carrito.productos}">
+            <td th:text="${producto.key}"></td>
+            <td th:text="${producto.value}"></td>
+        </tr>
+        </tbody>
+    </table>
+
+    <p th:if="${carrito.estaVacio()}">
+        El carrito está vacío.
+    </p>
+
+    <form action="/carrito/confirmar" method="post">
+        <button type="submit">Confirmar compra</button>
+    </form>
+</section>
+
+</body>
+</html>
