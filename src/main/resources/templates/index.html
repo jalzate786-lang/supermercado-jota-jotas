@@ -51,6 +51,48 @@
             color: #176b35;
             font-weight: bold;
         }
+
+        .buscador {
+            position: relative;
+            max-width: 350px;
+        }
+
+        .buscador input {
+            width: 90%;
+        }
+
+        .sugerencias {
+            position: absolute;
+            top: 100%;
+            left: 5px;
+            right: 5px;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            z-index: 10;
+            max-height: 180px;
+            overflow-y: auto;
+        }
+
+        .sugerencias button {
+            display: block;
+            width: 100%;
+            margin: 0;
+            padding: 10px;
+            background: white;
+            color: #263238;
+            text-align: left;
+            border-radius: 0;
+        }
+
+        .sugerencias button:hover {
+            background: #eeeeee;
+        }
+
+        .ayuda {
+            color: #666;
+            font-size: 13px;
+        }
     </style>
 </head>
 
@@ -67,8 +109,10 @@
     <form action="/productos/registrar" method="post">
         <input type="number" name="id" placeholder="ID" required>
         <input type="text" name="nombre" placeholder="Nombre" required>
+
         <input type="number" name="precio" placeholder="Precio"
                step="0.01" min="0.01" required>
+
         <input type="number" name="stock" placeholder="Stock"
                min="0" required>
 
@@ -108,11 +152,37 @@
     <h2>Agregar al carrito</h2>
 
     <form action="/carrito/agregar" method="post">
-        <input type="text" name="nombre"
-               placeholder="Nombre del producto" required>
 
-        <input type="number" name="cantidad"
-               placeholder="Cantidad" min="1" required>
+        <div class="buscador">
+
+            <input type="text"
+                   id="busquedaProducto"
+                   name="nombre"
+                   placeholder="Buscar producto..."
+                   autocomplete="off"
+                   required>
+
+            <div class="sugerencias" id="listaSugerencias" hidden>
+
+                <button type="button"
+                        th:each="producto : ${productos}"
+                        th:attr="data-nombre=${producto.nombre}"
+                        th:text="${producto.nombre}">
+                </button>
+
+            </div>
+
+        </div>
+
+        <p class="ayuda">
+            Escribe parte del nombre y selecciona el producto.
+        </p>
+
+        <input type="number"
+               name="cantidad"
+               placeholder="Cantidad"
+               min="1"
+               required>
 
         <button type="submit">Agregar al carrito</button>
     </form>
@@ -218,6 +288,48 @@
         Todavía no hay entregas procesadas.
     </p>
 </section>
+
+<script>
+    const busqueda = document.getElementById("busquedaProducto");
+    const lista = document.getElementById("listaSugerencias");
+    const opciones = lista.querySelectorAll("button");
+
+    busqueda.addEventListener("input", function () {
+
+        const texto = busqueda.value.trim().toLowerCase();
+        let coincidencias = 0;
+
+        opciones.forEach(function (opcion) {
+
+            const nombre = opcion.dataset.nombre.toLowerCase();
+
+            if (texto !== "" && nombre.includes(texto)) {
+                opcion.style.display = "block";
+                coincidencias++;
+            } else {
+                opcion.style.display = "none";
+            }
+        });
+
+        lista.hidden = coincidencias === 0;
+    });
+
+    opciones.forEach(function (opcion) {
+
+        opcion.addEventListener("click", function () {
+
+            busqueda.value = opcion.dataset.nombre;
+            lista.hidden = true;
+        });
+    });
+
+    document.addEventListener("click", function (evento) {
+
+        if (!evento.target.closest(".buscador")) {
+            lista.hidden = true;
+        }
+    });
+</script>
 
 </body>
 </html>
