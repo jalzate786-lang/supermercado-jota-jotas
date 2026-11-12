@@ -3,6 +3,7 @@ package org.example.supermercadojotajotas.service;
 
 import org.example.supermercadojotajotas.model.Pedido;
 import org.example.supermercadojotajotas.model.Producto;
+import org.example.supermercadojotajotas.model.RegistroEntrega;
 import org.example.supermercadojotajotas.repository.PedidoRepository;
 import org.example.supermercadojotajotas.repository.ProductoRepository;
 import org.example.supermercadojotajotas.repository.RegistroEntregaRepository;
@@ -36,6 +37,9 @@ class ProductoServiceTest {
                 .thenAnswer(invocacion -> invocacion.getArgument(0));
 
         when(pedidoRepository.save(any(Pedido.class)))
+                .thenAnswer(invocacion -> invocacion.getArgument(0));
+
+        when(registroEntregaRepository.save(any(RegistroEntrega.class)))
                 .thenAnswer(invocacion -> invocacion.getArgument(0));
 
         productoService = new ProductoService(
@@ -107,5 +111,49 @@ class ProductoServiceTest {
         assertEquals(1, productoService.cantidadPedidos());
 
         verify(pedidoRepository).save(any(Pedido.class));
+    }
+
+    @Test
+    void procesarPedidoYRegistrarEntrega() {
+        Pedido pedido = new Pedido("Carlos", false);
+        pedido.agregarProducto("Arroz", 3);
+        pedido.agregarProducto("Leche", 2);
+
+        productoService.agregarPedido(pedido);
+
+        Pedido procesado = productoService.procesarSiguientePedido();
+
+        assertNotNull(procesado);
+        assertEquals("EN CAMINO", procesado.getEstado());
+        assertEquals(0, productoService.cantidadPedidos());
+
+        assertEquals(1, productoService.getRegistros()
+                .cantidadRegistros());
+
+        RegistroEntrega registro = productoService.getRegistros()
+                .getRegistros().get(0);
+
+        assertEquals(pedido.getId(), registro.getPedidoId());
+        assertEquals("EN CAMINO", registro.getEstado());
+        assertEquals(3, registro.getProductos().get("Arroz"));
+        assertEquals(2, registro.getProductos().get("Leche"));
+        assertNotNull(registro.getFecha());
+
+        verify(pedidoRepository, times(2)).save(pedido);
+        verify(registroEntregaRepository).save(any(RegistroEntrega.class));
+    }
+
+    @Test
+    void noProcesarCuandoNoHayPedidosPendientes() {
+        Pedido procesado = productoService.procesarSiguientePedido();
+
+        assertNull(procesado);
+        assertEquals(0, productoService.cantidadPedidos());
+        assertEquals(0, productoService.getRegistros()
+                .cantidadRegistros());
+
+        verify(pedidoRepository, never()).save(any(Pedido.class));
+        verify(registroEntregaRepository, never())
+                .save(any(RegistroEntrega.class));
     }
 }
