@@ -28,7 +28,9 @@ public class ColaEntregas {
     }
 
     public void agregarPedido(Pedido pedido) {
-        pedidos.add(pedido);
+        if (pedido != null) {
+            pedidos.add(pedido);
+        }
     }
 
     public Pedido siguientePedido() {
@@ -37,6 +39,10 @@ public class ColaEntregas {
 
     public Pedido verSiguiente() {
         return pedidos.peek();
+    }
+
+    public boolean eliminarPedido(int pedidoId) {
+        return pedidos.removeIf(pedido -> pedido.getId() == pedidoId);
     }
 
     public boolean estaVacia() {

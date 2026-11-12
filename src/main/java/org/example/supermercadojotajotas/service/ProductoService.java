@@ -12,11 +12,15 @@ import org.example.supermercadojotajotas.structures.ColaEntregas;
 import org.example.supermercadojotajotas.structures.Inventario;
 import org.example.supermercadojotajotas.structures.RegistroEntregas;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class ProductoService {
@@ -69,9 +73,11 @@ public class ProductoService {
             return false;
         }
 
+        String nombre = producto.getNombre().trim();
+
         Producto nuevoProducto = new Producto(
                 0,
-                producto.getNombre(),
+                nombre,
                 producto.getPrecio(),
                 producto.getStock()
         );
@@ -87,11 +93,13 @@ public class ProductoService {
 
     public boolean actualizarStock(String nombre, int nuevoStock) {
 
-        if (!inventario.existeProducto(nombre) || nuevoStock < 0) {
+        String nombreOficial = inventario.buscarNombre(nombre);
+
+        if (nombreOficial == null || nuevoStock < 0) {
             return false;
         }
 
-        Producto producto = productoRepository.findByNombre(nombre);
+        Producto producto = productoRepository.findByNombre(nombreOficial);
 
         if (producto == null) {
             return false;
@@ -100,7 +108,7 @@ public class ProductoService {
         producto.setStock(nuevoStock);
         productoRepository.save(producto);
 
-        return inventario.actualizarStock(nombre, nuevoStock);
+        return inventario.actualizarStock(nombreOficial, nuevoStock);
     }
 
     public boolean existeProducto(String nombre) {
@@ -117,23 +125,31 @@ public class ProductoService {
 
     public boolean agregarAlCarrito(String nombre, int cantidad) {
 
-        if (!inventario.existeProducto(nombre)) {
+        String nombreOficial = inventario.buscarNombre(nombre);
+
+        if (nombreOficial == null) {
             return false;
         }
 
-        Integer stock = inventario.buscarStock(nombre);
+        int stock = inventario.buscarStock(nombreOficial);
 
-        return carrito.agregarProducto(nombre, cantidad, stock);
+        return carrito.agregarProducto(
+                nombreOficial,
+                cantidad,
+                stock
+        );
     }
 
     public Carrito verCarrito() {
         return carrito;
     }
 
+    @Transactional
     public boolean confirmarCompra() {
         return confirmarCompra("Cliente", false);
     }
 
+    @Transactional
     public boolean confirmarCompra(String cliente, boolean cuponRapidez) {
 
         if (carrito.estaVacio() ||
@@ -142,43 +158,70 @@ public class ProductoService {
             return false;
         }
 
+        Map<String, Producto> productosCompra = new HashMap<>();
+
         for (String nombre : carrito.getProductos().keySet()) {
 
             int cantidad = carrito.getProductos().get(nombre);
-            int stockActual = inventario.buscarStock(nombre);
 
-            if (!inventario.existeProducto(nombre) || cantidad > stockActual) {
+            Producto producto = productoRepository.findByNombre(nombre);
+
+            if (!inventario.existeProducto(nombre) ||
+                    producto == null ||
+                    cantidad <= 0 ||
+                    cantidad > producto.getStock()) {
                 return false;
             }
+
+            productosCompra.put(nombre, producto);
         }
 
         Pedido pedido = new Pedido(cliente, cuponRapidez);
+        Map<String, Integer> nuevosStocks = new HashMap<>();
 
         for (String nombre : carrito.getProductos().keySet()) {
 
             int cantidad = carrito.getProductos().get(nombre);
 
+            Producto producto = productosCompra.get(nombre);
+
             pedido.agregarProducto(nombre, cantidad);
 
-            int stockActual = inventario.buscarStock(nombre);
+            int nuevoStock = producto.getStock() - cantidad;
 
-            actualizarStock(nombre, stockActual - cantidad);
+            producto.setStock(nuevoStock);
+            productoRepository.save(producto);
+
+            nuevosStocks.put(nombre, nuevoStock);
         }
 
         Pedido pedidoGuardado = pedidoRepository.save(pedido);
 
-        colaEntregas.agregarPedido(pedidoGuardado);
+        ejecutarDespuesDeConfirmar(() -> {
 
-        carrito.vaciar();
+            for (String nombre : nuevosStocks.keySet()) {
+                inventario.actualizarStock(nombre, nuevosStocks.get(nombre));
+            }
+
+            colaEntregas.agregarPedido(pedidoGuardado);
+            carrito.vaciar();
+        });
 
         return true;
     }
 
+    @Transactional
     public void agregarPedido(Pedido pedido) {
+
+        if (pedido == null) {
+            return;
+        }
 
         Pedido pedidoGuardado = pedidoRepository.save(pedido);
 
-        colaEntregas.agregarPedido(pedidoGuardado);
+        ejecutarDespuesDeConfirmar(() ->
+                colaEntregas.agregarPedido(pedidoGuardado)
+        );
     }
 
     public Pedido verSiguientePedido() {
@@ -189,34 +232,41 @@ public class ProductoService {
         return colaEntregas.listarPedidos();
     }
 
+    @Transactional
     public Pedido procesarSiguientePedido() {
 
-        Pedido pedido = colaEntregas.siguientePedido();
+        Pedido pedido = colaEntregas.verSiguiente();
 
-        if (pedido != null) {
+        if (pedido == null) {
+            return null;
+        }
 
-            pedido.setEstado("EN CAMINO");
+        pedido.setEstado("EN CAMINO");
 
-            pedidoRepository.save(pedido);
+        Pedido pedidoGuardado = pedidoRepository.save(pedido);
 
-            LocalDateTime fechaCambio = LocalDateTime.now();
+        LocalDateTime fechaCambio = LocalDateTime.now();
 
-            RegistroEntrega registro = new RegistroEntrega(
-                    pedido.getId(),
-                    new HashMap<>(pedido.getProductos()),
-                    fechaCambio,
-                    pedido.getEstado()
-            );
+        RegistroEntrega registro = new RegistroEntrega(
+                pedidoGuardado.getId(),
+                new HashMap<>(pedidoGuardado.getProductos()),
+                fechaCambio,
+                pedidoGuardado.getEstado()
+        );
 
-            RegistroEntrega registroGuardado =
-                    registroEntregaRepository.save(registro);
+        RegistroEntrega registroGuardado =
+                registroEntregaRepository.save(registro);
+
+        ejecutarDespuesDeConfirmar(() -> {
+
+            colaEntregas.eliminarPedido(pedidoGuardado.getId());
 
             registros.agregarRegistro(registroGuardado);
 
-            logEntrega.registrar(pedido, fechaCambio);
-        }
+            logEntrega.registrar(pedidoGuardado, fechaCambio);
+        });
 
-        return pedido;
+        return pedidoGuardado;
     }
 
     public int cantidadPedidos() {
@@ -225,5 +275,24 @@ public class ProductoService {
 
     public RegistroEntregas getRegistros() {
         return registros;
+    }
+
+    private void ejecutarDespuesDeConfirmar(Runnable accion) {
+
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+
+            TransactionSynchronizationManager.registerSynchronization(
+                    new TransactionSynchronization() {
+
+                        @Override
+                        public void afterCommit() {
+                            accion.run();
+                        }
+                    }
+            );
+
+        } else {
+            accion.run();
+        }
     }
 }

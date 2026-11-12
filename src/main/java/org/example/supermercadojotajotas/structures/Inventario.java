@@ -18,38 +18,73 @@ public class Inventario {
 
     public boolean agregarProducto(Producto producto) {
 
-        if (producto.getPrecio() <= 0 || producto.getStock() < 0) {
+        if (producto == null ||
+                producto.getNombre() == null ||
+                producto.getNombre().trim().isEmpty() ||
+                producto.getPrecio() <= 0 ||
+                producto.getStock() < 0) {
             return false;
         }
 
-        if (productos.containsKey(producto.getNombre())) {
+        String nombre = producto.getNombre().trim();
+
+        if (existeProducto(nombre)) {
             return false;
         }
 
-        stock.put(producto.getNombre(), producto.getStock());
-        productos.put(producto.getNombre(), producto);
+        producto.setNombre(nombre);
+
+        stock.put(nombre, producto.getStock());
+        productos.put(nombre, producto);
 
         return true;
     }
 
+    public String buscarNombre(String nombre) {
+
+        if (nombre == null || nombre.trim().isEmpty()) {
+            return null;
+        }
+
+        String nombreBuscado = nombre.trim();
+
+        for (String nombreGuardado : productos.keySet()) {
+
+            if (nombreGuardado.equalsIgnoreCase(nombreBuscado)) {
+                return nombreGuardado;
+            }
+        }
+
+        return null;
+    }
+
     public int buscarStock(String nombre) {
-        return stock.getOrDefault(nombre, 0);
+
+        String nombreOficial = buscarNombre(nombre);
+
+        if (nombreOficial == null) {
+            return 0;
+        }
+
+        return stock.get(nombreOficial);
     }
 
     public boolean actualizarStock(String nombre, int nuevoStock) {
 
-        if (nuevoStock < 0 || !stock.containsKey(nombre)) {
+        String nombreOficial = buscarNombre(nombre);
+
+        if (nombreOficial == null || nuevoStock < 0) {
             return false;
         }
 
-        stock.put(nombre, nuevoStock);
-        productos.get(nombre).setStock(nuevoStock);
+        stock.put(nombreOficial, nuevoStock);
+        productos.get(nombreOficial).setStock(nuevoStock);
 
         return true;
     }
 
     public boolean existeProducto(String nombre) {
-        return productos.containsKey(nombre);
+        return buscarNombre(nombre) != null;
     }
 
     public HashMap<String, Integer> getStock() {
@@ -65,9 +100,28 @@ public class Inventario {
         stock.clear();
         productos.clear();
 
+        if (productosGuardados == null) {
+            return;
+        }
+
         for (Producto producto : productosGuardados) {
-            stock.put(producto.getNombre(), producto.getStock());
-            productos.put(producto.getNombre(), producto);
+
+            if (producto != null &&
+                    producto.getNombre() != null &&
+                    !producto.getNombre().trim().isEmpty() &&
+                    producto.getPrecio() > 0 &&
+                    producto.getStock() >= 0) {
+
+                String nombre = producto.getNombre().trim();
+
+                if (!existeProducto(nombre)) {
+
+                    producto.setNombre(nombre);
+
+                    stock.put(nombre, producto.getStock());
+                    productos.put(nombre, producto);
+                }
+            }
         }
     }
 }

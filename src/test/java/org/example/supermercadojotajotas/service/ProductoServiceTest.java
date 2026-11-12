@@ -63,10 +63,19 @@ class ProductoServiceTest {
     @Test
     void rechazarProductoConDatosInvalidos() {
         Producto sinPrecio = new Producto(1, "Leche", 0, 10);
-        Producto stockNegativo = new Producto(2, "Pan", 2000, -5);
+        Producto precioNegativo = new Producto(2, "Pan", -2000, 5);
+        Producto stockNegativo = new Producto(3, "Huevos", 12000, -5);
+        Producto nombreVacio = new Producto(4, "", 2000, 10);
+        Producto nombreEspacios = new Producto(5, "   ", 2000, 10);
+        Producto nombreNulo = new Producto(6, null, 2000, 10);
 
         assertFalse(productoService.registrarProducto(sinPrecio));
+        assertFalse(productoService.registrarProducto(precioNegativo));
         assertFalse(productoService.registrarProducto(stockNegativo));
+        assertFalse(productoService.registrarProducto(nombreVacio));
+        assertFalse(productoService.registrarProducto(nombreEspacios));
+        assertFalse(productoService.registrarProducto(nombreNulo));
+        assertFalse(productoService.registrarProducto(null));
 
         verify(productoRepository, never()).save(any(Producto.class));
     }
@@ -111,6 +120,55 @@ class ProductoServiceTest {
         assertEquals(1, productoService.cantidadPedidos());
 
         verify(pedidoRepository).save(any(Pedido.class));
+    }
+
+    @Test
+    void noConfirmarCompraConCarritoVacio() {
+        assertFalse(productoService.confirmarCompra("Juan", false));
+
+        assertEquals(0, productoService.cantidadPedidos());
+        assertTrue(productoService.verCarrito().estaVacio());
+
+        verify(pedidoRepository, never()).save(any(Pedido.class));
+    }
+
+    @Test
+    void rechazarCompraConNombreDeClienteInvalido() {
+        Producto producto = new Producto(1, "Arroz", 3500, 10);
+
+        productoService.registrarProducto(producto);
+        productoService.agregarAlCarrito("Arroz", 3);
+
+        assertFalse(productoService.confirmarCompra("", false));
+        assertFalse(productoService.confirmarCompra("   ", false));
+        assertFalse(productoService.confirmarCompra(null, false));
+
+        assertEquals(10, productoService.buscarStock("Arroz"));
+        assertFalse(productoService.verCarrito().estaVacio());
+
+        verify(pedidoRepository, never()).save(any(Pedido.class));
+    }
+
+    @Test
+    void rechazarCompraCuandoElStockDisminuye() {
+        Producto producto = new Producto(1, "Arroz", 3500, 10);
+
+        productoService.registrarProducto(producto);
+
+        when(productoRepository.findByNombre("Arroz"))
+                .thenReturn(producto);
+
+        assertTrue(productoService.agregarAlCarrito("Arroz", 4));
+
+        assertTrue(productoService.actualizarStock("Arroz", 2));
+
+        assertFalse(productoService.confirmarCompra("Juan", false));
+
+        assertEquals(2, productoService.buscarStock("Arroz"));
+        assertFalse(productoService.verCarrito().estaVacio());
+        assertEquals(0, productoService.cantidadPedidos());
+
+        verify(pedidoRepository, never()).save(any(Pedido.class));
     }
 
     @Test

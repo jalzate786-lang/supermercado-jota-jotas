@@ -62,4 +62,36 @@ class InventarioTest {
         assertFalse(inventario.actualizarStock("Arroz", -1));
         assertFalse(inventario.actualizarStock("Leche", 10));
     }
+
+    @Test
+    void noPermitirProductoNuloNiNombreInvalido() {
+        Inventario inventario = new Inventario();
+
+        Producto nombreVacio = new Producto(1, "", 3500, 10);
+        Producto nombreEspacios = new Producto(2, "   ", 3500, 10);
+        Producto nombreNulo = new Producto(3, null, 3500, 10);
+
+        assertFalse(inventario.agregarProducto(null));
+        assertFalse(inventario.agregarProducto(nombreVacio));
+        assertFalse(inventario.agregarProducto(nombreEspacios));
+        assertFalse(inventario.agregarProducto(nombreNulo));
+    }
+
+    @Test
+    void rechazarPrecioNegativo() {
+        Inventario inventario = new Inventario();
+
+        Producto producto = new Producto(1, "Arroz", -3500, 10);
+
+        assertFalse(inventario.agregarProducto(producto));
+    }
+
+    @Test
+    void buscarProductoInexistente() {
+        Inventario inventario = new Inventario();
+
+        assertEquals(0, inventario.buscarStock("Leche"));
+        assertFalse(inventario.existeProducto("Leche"));
+        assertFalse(inventario.existeProducto(null));
+    }
 }
