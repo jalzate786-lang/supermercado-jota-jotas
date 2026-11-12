@@ -37,6 +37,34 @@ class ColaEntregasTest {
     }
 
     @Test
+    void pedidosNormalesRespetanOrdenDeLlegada() {
+        ColaEntregas cola = new ColaEntregas();
+
+        Pedido primero = new Pedido("Juan", false);
+        Pedido segundo = new Pedido("Pedro", false);
+
+        cola.agregarPedido(primero);
+        cola.agregarPedido(segundo);
+
+        assertSame(primero, cola.siguientePedido());
+        assertSame(segundo, cola.siguientePedido());
+    }
+
+    @Test
+    void pedidosConCuponRespetanOrdenDeLlegada() {
+        ColaEntregas cola = new ColaEntregas();
+
+        Pedido primero = new Pedido("Juan", true);
+        Pedido segundo = new Pedido("Pedro", true);
+
+        cola.agregarPedido(primero);
+        cola.agregarPedido(segundo);
+
+        assertSame(primero, cola.siguientePedido());
+        assertSame(segundo, cola.siguientePedido());
+    }
+
+    @Test
     void contarPedidosCorrectamente() {
         ColaEntregas cola = new ColaEntregas();
 
