@@ -35,3 +35,9 @@ out/
 
 ### VS Code ###
 .vscode/
+
+# Configuracion local
+src/main/resources/application-local.properties
+
+# Registros del sistema
+logs/

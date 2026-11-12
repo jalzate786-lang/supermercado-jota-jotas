@@ -1,32 +1,64 @@
+
 package org.example.supermercadojotajotas.model;
+
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.MapKeyColumn;
+import jakarta.persistence.Table;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.Map;
 
+@Entity
+@Table(name = "registros_entrega")
 public class RegistroEntrega {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private int id;
+
     private int pedidoId;
-    private HashMap<String, Integer> productos;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(
+            name = "registro_entrega_productos",
+            joinColumns = @JoinColumn(name = "registro_id")
+    )
+    @MapKeyColumn(name = "nombre_producto")
+    @Column(name = "cantidad")
+    private Map<String, Integer> productos;
+
     private LocalDateTime fecha;
     private String estado;
 
-    public RegistroEntrega(
-            int pedidoId,
-            HashMap<String, Integer> productos,
-            LocalDateTime fecha,
-            String estado) {
+    public RegistroEntrega() {
+    }
 
+    public RegistroEntrega(int pedidoId, HashMap<String, Integer> productos,
+                           LocalDateTime fecha, String estado) {
         this.pedidoId = pedidoId;
         this.productos = productos;
         this.fecha = fecha;
         this.estado = estado;
     }
 
+    public int getId() {
+        return id;
+    }
+
     public int getPedidoId() {
         return pedidoId;
     }
 
-    public HashMap<String, Integer> getProductos() {
+    public Map<String, Integer> getProductos() {
         return productos;
     }
 
@@ -41,7 +73,8 @@ public class RegistroEntrega {
     @Override
     public String toString() {
         return "RegistroEntrega{" +
-                "pedidoId=" + pedidoId +
+                "id=" + id +
+                ", pedidoId=" + pedidoId +
                 ", productos=" + productos +
                 ", fecha=" + fecha +
                 ", estado='" + estado + '\'' +

@@ -5,6 +5,9 @@ import org.example.supermercadojotajotas.model.Carrito;
 import org.example.supermercadojotajotas.model.Pedido;
 import org.example.supermercadojotajotas.model.Producto;
 import org.example.supermercadojotajotas.model.RegistroEntrega;
+import org.example.supermercadojotajotas.repository.PedidoRepository;
+import org.example.supermercadojotajotas.repository.ProductoRepository;
+import org.example.supermercadojotajotas.repository.RegistroEntregaRepository;
 import org.example.supermercadojotajotas.structures.ColaEntregas;
 import org.example.supermercadojotajotas.structures.Inventario;
 import org.example.supermercadojotajotas.structures.RegistroEntregas;
@@ -23,19 +26,59 @@ public class ProductoService {
     private Carrito carrito;
     private RegistroEntregas registros;
     private LogEntrega logEntrega;
-    private int siguienteIdPedido;
 
-    public ProductoService() {
+    private ProductoRepository productoRepository;
+    private PedidoRepository pedidoRepository;
+    private RegistroEntregaRepository registroEntregaRepository;
+
+    public ProductoService(
+            ProductoRepository productoRepository,
+            PedidoRepository pedidoRepository,
+            RegistroEntregaRepository registroEntregaRepository) {
+
+        this.productoRepository = productoRepository;
+        this.pedidoRepository = pedidoRepository;
+        this.registroEntregaRepository = registroEntregaRepository;
+
         inventario = new Inventario();
         colaEntregas = new ColaEntregas();
         carrito = new Carrito();
         registros = new RegistroEntregas();
         logEntrega = new LogEntrega();
-        siguienteIdPedido = 1;
+
+        inventario.cargarProductos(productoRepository.findAll());
+
+        registros.cargarRegistros(registroEntregaRepository.findAll());
+
+        for (Pedido pedido : pedidoRepository.findAll()) {
+
+            if ("ESPERA".equals(pedido.getEstado())) {
+                colaEntregas.agregarPedido(pedido);
+            }
+        }
     }
 
     public boolean registrarProducto(Producto producto) {
-        return inventario.agregarProducto(producto);
+
+        if (producto == null ||
+                producto.getNombre() == null ||
+                producto.getNombre().trim().isEmpty() ||
+                producto.getPrecio() <= 0 ||
+                producto.getStock() < 0 ||
+                existeProducto(producto.getNombre())) {
+            return false;
+        }
+
+        Producto nuevoProducto = new Producto(
+                0,
+                producto.getNombre(),
+                producto.getPrecio(),
+                producto.getStock()
+        );
+
+        Producto guardado = productoRepository.save(nuevoProducto);
+
+        return inventario.agregarProducto(guardado);
     }
 
     public Integer buscarStock(String nombre) {
@@ -43,6 +86,20 @@ public class ProductoService {
     }
 
     public boolean actualizarStock(String nombre, int nuevoStock) {
+
+        if (!inventario.existeProducto(nombre) || nuevoStock < 0) {
+            return false;
+        }
+
+        Producto producto = productoRepository.findByNombre(nombre);
+
+        if (producto == null) {
+            return false;
+        }
+
+        producto.setStock(nuevoStock);
+        productoRepository.save(producto);
+
         return inventario.actualizarStock(nombre, nuevoStock);
     }
 
@@ -60,11 +117,11 @@ public class ProductoService {
 
     public boolean agregarAlCarrito(String nombre, int cantidad) {
 
-        Integer stock = inventario.buscarStock(nombre);
-
-        if (stock == null) {
+        if (!inventario.existeProducto(nombre)) {
             return false;
         }
+
+        Integer stock = inventario.buscarStock(nombre);
 
         return carrito.agregarProducto(nombre, cantidad, stock);
     }
@@ -79,25 +136,23 @@ public class ProductoService {
 
     public boolean confirmarCompra(String cliente, boolean cuponRapidez) {
 
-        if (carrito.estaVacio() || cliente == null || cliente.trim().isEmpty()) {
+        if (carrito.estaVacio() ||
+                cliente == null ||
+                cliente.trim().isEmpty()) {
             return false;
         }
 
         for (String nombre : carrito.getProductos().keySet()) {
 
             int cantidad = carrito.getProductos().get(nombre);
-            Integer stockActual = inventario.buscarStock(nombre);
+            int stockActual = inventario.buscarStock(nombre);
 
-            if (stockActual == null || cantidad > stockActual) {
+            if (!inventario.existeProducto(nombre) || cantidad > stockActual) {
                 return false;
             }
         }
 
-        Pedido pedido = new Pedido(
-                siguienteIdPedido,
-                cliente,
-                cuponRapidez
-        );
+        Pedido pedido = new Pedido(cliente, cuponRapidez);
 
         for (String nombre : carrito.getProductos().keySet()) {
 
@@ -107,15 +162,12 @@ public class ProductoService {
 
             int stockActual = inventario.buscarStock(nombre);
 
-            inventario.actualizarStock(
-                    nombre,
-                    stockActual - cantidad
-            );
+            actualizarStock(nombre, stockActual - cantidad);
         }
 
-        colaEntregas.agregarPedido(pedido);
+        Pedido pedidoGuardado = pedidoRepository.save(pedido);
 
-        siguienteIdPedido++;
+        colaEntregas.agregarPedido(pedidoGuardado);
 
         carrito.vaciar();
 
@@ -123,7 +175,10 @@ public class ProductoService {
     }
 
     public void agregarPedido(Pedido pedido) {
-        colaEntregas.agregarPedido(pedido);
+
+        Pedido pedidoGuardado = pedidoRepository.save(pedido);
+
+        colaEntregas.agregarPedido(pedidoGuardado);
     }
 
     public Pedido verSiguientePedido() {
@@ -142,6 +197,8 @@ public class ProductoService {
 
             pedido.setEstado("EN CAMINO");
 
+            pedidoRepository.save(pedido);
+
             LocalDateTime fechaCambio = LocalDateTime.now();
 
             RegistroEntrega registro = new RegistroEntrega(
@@ -151,7 +208,10 @@ public class ProductoService {
                     pedido.getEstado()
             );
 
-            registros.agregarRegistro(registro);
+            RegistroEntrega registroGuardado =
+                    registroEntregaRepository.save(registro);
+
+            registros.agregarRegistro(registroGuardado);
 
             logEntrega.registrar(pedido, fechaCambio);
         }

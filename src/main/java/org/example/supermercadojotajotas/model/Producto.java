@@ -1,11 +1,26 @@
+
 package org.example.supermercadojotajotas.model;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name = "productos")
 public class Producto {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
+
     private String nombre;
     private double precio;
     private int stock;
+
+    public Producto() {
+    }
 
     public Producto(int id, String nombre, double precio, int stock) {
         this.id = id;

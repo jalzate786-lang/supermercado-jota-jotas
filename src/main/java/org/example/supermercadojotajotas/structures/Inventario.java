@@ -3,7 +3,6 @@ package org.example.supermercadojotajotas.structures;
 
 import org.example.supermercadojotajotas.model.Producto;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 
@@ -23,14 +22,18 @@ public class Inventario {
             return false;
         }
 
+        if (productos.containsKey(producto.getNombre())) {
+            return false;
+        }
+
         stock.put(producto.getNombre(), producto.getStock());
         productos.put(producto.getNombre(), producto);
 
         return true;
     }
 
-    public Integer buscarStock(String nombre) {
-        return stock.get(nombre);
+    public int buscarStock(String nombre) {
+        return stock.getOrDefault(nombre, 0);
     }
 
     public boolean actualizarStock(String nombre, int nuevoStock) {
@@ -46,7 +49,7 @@ public class Inventario {
     }
 
     public boolean existeProducto(String nombre) {
-        return stock.containsKey(nombre);
+        return productos.containsKey(nombre);
     }
 
     public HashMap<String, Integer> getStock() {
@@ -54,6 +57,17 @@ public class Inventario {
     }
 
     public Collection<Producto> listarProductos() {
-        return new ArrayList<>(productos.values());
+        return productos.values();
+    }
+
+    public void cargarProductos(Collection<Producto> productosGuardados) {
+
+        stock.clear();
+        productos.clear();
+
+        for (Producto producto : productosGuardados) {
+            stock.put(producto.getNombre(), producto.getStock());
+            productos.put(producto.getNombre(), producto);
+        }
     }
 }
