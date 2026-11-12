@@ -1,7 +1,10 @@
+
 package org.example.supermercadojotajotas.structures;
 
 import org.example.supermercadojotajotas.model.Pedido;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.PriorityQueue;
 
 public class ColaEntregas {
@@ -42,5 +45,17 @@ public class ColaEntregas {
 
     public int cantidadPedidos() {
         return pedidos.size();
+    }
+
+    public List<Pedido> listarPedidos() {
+
+        PriorityQueue<Pedido> copia = new PriorityQueue<>(pedidos);
+        List<Pedido> lista = new ArrayList<>();
+
+        while (!copia.isEmpty()) {
+            lista.add(copia.poll());
+        }
+
+        return lista;
     }
 }

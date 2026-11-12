@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Supermercado Jota Jota</title>
+
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -56,7 +57,7 @@
 <body>
 
 <h1>Supermercado Jota Jota</h1>
-<p>Administración de inventario y compras</p>
+<p>Administración de inventario, compras y entregas</p>
 
 <p class="mensaje" th:if="${mensaje}" th:text="${mensaje}"></p>
 
@@ -64,22 +65,14 @@
     <h2>Registrar producto</h2>
 
     <form action="/productos/registrar" method="post">
-
-        <input type="number" name="id"
-               placeholder="ID" required>
-
-        <input type="text" name="nombre"
-               placeholder="Nombre" required>
-
-        <input type="number" name="precio"
-               placeholder="Precio" step="0.01"
-               min="0.01" required>
-
-        <input type="number" name="stock"
-               placeholder="Stock" min="0" required>
+        <input type="number" name="id" placeholder="ID" required>
+        <input type="text" name="nombre" placeholder="Nombre" required>
+        <input type="number" name="precio" placeholder="Precio"
+               step="0.01" min="0.01" required>
+        <input type="number" name="stock" placeholder="Stock"
+               min="0" required>
 
         <button type="submit">Registrar producto</button>
-
     </form>
 </section>
 
@@ -115,7 +108,6 @@
     <h2>Agregar al carrito</h2>
 
     <form action="/carrito/agregar" method="post">
-
         <input type="text" name="nombre"
                placeholder="Nombre del producto" required>
 
@@ -123,7 +115,6 @@
                placeholder="Cantidad" min="1" required>
 
         <button type="submit">Agregar al carrito</button>
-
     </form>
 </section>
 
@@ -151,8 +142,81 @@
     </p>
 
     <form action="/carrito/confirmar" method="post">
-        <button type="submit">Confirmar compra</button>
+
+        <input type="text" name="cliente"
+               placeholder="Nombre del cliente" required>
+
+        <label>
+            <input type="checkbox" name="cuponRapidez" value="true">
+            Usar cupón de rapidez
+        </label>
+
+        <br>
+
+        <button type="submit">Confirmar compra y crear pedido</button>
     </form>
+</section>
+
+<section>
+    <h2>Pedidos pendientes</h2>
+
+    <table>
+        <thead>
+        <tr>
+            <th>Pedido</th>
+            <th>Cliente</th>
+            <th>Productos</th>
+            <th>Cupón</th>
+            <th>Estado</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        <tr th:each="pedido : ${pedidos}">
+            <td th:text="${pedido.id}"></td>
+            <td th:text="${pedido.cliente}"></td>
+            <td th:text="${pedido.productos}"></td>
+            <td th:text="${pedido.cuponRapidez ? 'Sí' : 'No'}"></td>
+            <td th:text="${pedido.estado}"></td>
+        </tr>
+        </tbody>
+    </table>
+
+    <p th:if="${#lists.isEmpty(pedidos)}">
+        No hay pedidos pendientes.
+    </p>
+
+    <form action="/pedidos/procesar" method="post">
+        <button type="submit">Procesar siguiente pedido</button>
+    </form>
+</section>
+
+<section>
+    <h2>Registro de entregas</h2>
+
+    <table>
+        <thead>
+        <tr>
+            <th>Pedido</th>
+            <th>Productos</th>
+            <th>Fecha</th>
+            <th>Estado</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        <tr th:each="registro : ${registros}">
+            <td th:text="${registro.pedidoId}"></td>
+            <td th:text="${registro.productos}"></td>
+            <td th:text="${registro.fecha}"></td>
+            <td th:text="${registro.estado}"></td>
+        </tr>
+        </tbody>
+    </table>
+
+    <p th:if="${#lists.isEmpty(registros)}">
+        Todavía no hay entregas procesadas.
+    </p>
 </section>
 
 </body>

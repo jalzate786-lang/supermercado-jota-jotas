@@ -25,6 +25,8 @@ public class PaginaController {
 
         model.addAttribute("productos", productoService.listarProductos());
         model.addAttribute("carrito", productoService.verCarrito());
+        model.addAttribute("pedidos", productoService.listarPedidosEnEspera());
+        model.addAttribute("registros", productoService.getRegistros().getRegistros());
 
         if (mensaje != null) {
             model.addAttribute("mensaje", mensaje);
@@ -62,12 +64,24 @@ public class PaginaController {
     }
 
     @PostMapping("/carrito/confirmar")
-    public String confirmarCompra() {
+    public String confirmarCompra(
+            @RequestParam String cliente,
+            @RequestParam(defaultValue = "false") boolean cuponRapidez) {
 
-        if (productoService.confirmarCompra()) {
-            return "redirect:/?mensaje=Compra+confirmada";
+        if (productoService.confirmarCompra(cliente, cuponRapidez)) {
+            return "redirect:/?mensaje=Compra+confirmada+y+pedido+creado";
         }
 
         return "redirect:/?mensaje=No+se+pudo+confirmar+la+compra";
+    }
+
+    @PostMapping("/pedidos/procesar")
+    public String procesarPedido() {
+
+        if (productoService.procesarSiguientePedido() != null) {
+            return "redirect:/?mensaje=Pedido+en+camino";
+        }
+
+        return "redirect:/?mensaje=No+hay+pedidos+pendientes";
     }
 }

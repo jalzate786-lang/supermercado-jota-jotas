@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 
 @Service
 public class ProductoService {
@@ -22,6 +23,7 @@ public class ProductoService {
     private Carrito carrito;
     private RegistroEntregas registros;
     private LogEntrega logEntrega;
+    private int siguienteIdPedido;
 
     public ProductoService() {
         inventario = new Inventario();
@@ -29,6 +31,7 @@ public class ProductoService {
         carrito = new Carrito();
         registros = new RegistroEntregas();
         logEntrega = new LogEntrega();
+        siguienteIdPedido = 1;
     }
 
     public boolean registrarProducto(Producto producto) {
@@ -71,8 +74,12 @@ public class ProductoService {
     }
 
     public boolean confirmarCompra() {
+        return confirmarCompra("Cliente", false);
+    }
 
-        if (carrito.estaVacio()) {
+    public boolean confirmarCompra(String cliente, boolean cuponRapidez) {
+
+        if (carrito.estaVacio() || cliente == null || cliente.trim().isEmpty()) {
             return false;
         }
 
@@ -86,13 +93,29 @@ public class ProductoService {
             }
         }
 
+        Pedido pedido = new Pedido(
+                siguienteIdPedido,
+                cliente,
+                cuponRapidez
+        );
+
         for (String nombre : carrito.getProductos().keySet()) {
 
             int cantidad = carrito.getProductos().get(nombre);
+
+            pedido.agregarProducto(nombre, cantidad);
+
             int stockActual = inventario.buscarStock(nombre);
 
-            inventario.actualizarStock(nombre, stockActual - cantidad);
+            inventario.actualizarStock(
+                    nombre,
+                    stockActual - cantidad
+            );
         }
+
+        colaEntregas.agregarPedido(pedido);
+
+        siguienteIdPedido++;
 
         carrito.vaciar();
 
@@ -107,6 +130,10 @@ public class ProductoService {
         return colaEntregas.verSiguiente();
     }
 
+    public List<Pedido> listarPedidosEnEspera() {
+        return colaEntregas.listarPedidos();
+    }
+
     public Pedido procesarSiguientePedido() {
 
         Pedido pedido = colaEntregas.siguientePedido();
@@ -115,19 +142,18 @@ public class ProductoService {
 
             pedido.setEstado("EN CAMINO");
 
-            HashMap<String, Integer> productos =
-                    new HashMap<>(pedido.getProductos());
+            LocalDateTime fechaCambio = LocalDateTime.now();
 
             RegistroEntrega registro = new RegistroEntrega(
                     pedido.getId(),
-                    productos,
-                    LocalDateTime.now(),
+                    new HashMap<>(pedido.getProductos()),
+                    fechaCambio,
                     pedido.getEstado()
             );
 
             registros.agregarRegistro(registro);
 
-            logEntrega.registrar(pedido);
+            logEntrega.registrar(pedido, fechaCambio);
         }
 
         return pedido;

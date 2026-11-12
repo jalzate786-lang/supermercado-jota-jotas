@@ -1,3 +1,4 @@
+
 package org.example.supermercadojotajotas.service;
 
 import org.example.supermercadojotajotas.model.Pedido;
@@ -5,12 +6,13 @@ import org.example.supermercadojotajotas.model.Pedido;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.time.LocalDateTime;
 
 public class LogEntrega {
 
     private final String ruta = "logs/entregas.txt";
 
-    public void registrar(Pedido pedido) {
+    public void registrar(Pedido pedido, LocalDateTime fechaCambio) {
 
         File carpeta = new File("logs");
 
@@ -24,7 +26,7 @@ public class LogEntrega {
             escritor.write("PEDIDO: " + pedido.getId() + "\n");
             escritor.write("CLIENTE: " + pedido.getCliente() + "\n");
             escritor.write("PRODUCTOS: " + pedido.getProductos() + "\n");
-            escritor.write("FECHA: " + pedido.getFechaCreacion() + "\n");
+            escritor.write("FECHA DE CAMBIO: " + fechaCambio + "\n");
             escritor.write("ESTADO: " + pedido.getEstado() + "\n");
             escritor.write("========================================\n\n");
 
