@@ -1,8 +1,6 @@
-
 package org.example.supermercadojotajotas.structures;
 
 import org.example.supermercadojotajotas.model.Pedido;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.PriorityQueue;
@@ -13,18 +11,7 @@ public class ColaEntregas {
 
     public ColaEntregas() {
 
-        pedidos = new PriorityQueue<>((p1, p2) -> {
-
-            if (p1.isCuponRapidez() && !p2.isCuponRapidez()) {
-                return -1;
-            }
-
-            if (!p1.isCuponRapidez() && p2.isCuponRapidez()) {
-                return 1;
-            }
-
-            return p1.getFechaCreacion().compareTo(p2.getFechaCreacion());
-        });
+        pedidos = new PriorityQueue<>();
     }
 
     public void agregarPedido(Pedido pedido) {
@@ -33,35 +20,18 @@ public class ColaEntregas {
         }
     }
 
-    public Pedido siguientePedido() {
-        return pedidos.poll();
-    }
-
-    public Pedido verSiguiente() {
-        return pedidos.peek();
-    }
-
-    public boolean eliminarPedido(int pedidoId) {
-        return pedidos.removeIf(pedido -> pedido.getId() == pedidoId);
-    }
-
-    public boolean estaVacia() {
-        return pedidos.isEmpty();
-    }
-
-    public int cantidadPedidos() {
-        return pedidos.size();
-    }
+    public Pedido siguientePedido() { return pedidos.poll(); }
+    public Pedido verSiguiente() { return pedidos.peek(); }
+    public boolean eliminarPedido(int pedidoId) { return pedidos.removeIf(p -> p.getId() == pedidoId); }
+    public boolean estaVacia() { return pedidos.isEmpty(); }
+    public int cantidadPedidos() { return pedidos.size(); }
 
     public List<Pedido> listarPedidos() {
-
         PriorityQueue<Pedido> copia = new PriorityQueue<>(pedidos);
         List<Pedido> lista = new ArrayList<>();
-
         while (!copia.isEmpty()) {
             lista.add(copia.poll());
         }
-
         return lista;
     }
 }

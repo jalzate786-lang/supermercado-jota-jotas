@@ -1,49 +1,31 @@
-
 package org.example.supermercadojotajotas.model;
 
-import jakarta.persistence.CollectionTable;
-import jakarta.persistence.Column;
-import jakarta.persistence.ElementCollection;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.MapKeyColumn;
-import jakarta.persistence.Table;
-
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 @Entity
 @Table(name = "pedidos")
-public class Pedido {
+public class Pedido implements Comparable<Pedido> {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
     private String cliente;
-
     private boolean cuponRapidez;
-
     private String estado;
-
     private LocalDateTime fechaCreacion;
 
     @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(
-            name = "pedido_productos",
-            joinColumns = @JoinColumn(name = "pedido_id")
-    )
+    @CollectionTable(name = "pedido_productos", joinColumns = @JoinColumn(name = "pedido_id"))
     @MapKeyColumn(name = "nombre_producto")
     @Column(name = "cantidad")
     private Map<String, Integer> productos;
 
-    public Pedido() {
-    }
+    public Pedido() {}
 
     public Pedido(String cliente, boolean cuponRapidez) {
         this.cliente = cliente;
@@ -53,47 +35,42 @@ public class Pedido {
         this.productos = new HashMap<>();
     }
 
-    public int getId() {
-        return id;
-    }
+    public int getId() { return id; }
+    public String getCliente() { return cliente; }
+    public boolean isCuponRapidez() { return cuponRapidez; }
+    public String getEstado() { return estado; }
+    public LocalDateTime getFechaCreacion() { return fechaCreacion; }
+    public Map<String, Integer> getProductos() { return productos; }
 
-    public String getCliente() {
-        return cliente;
-    }
+    public void agregarProducto(String nombre, int cantidad) { productos.put(nombre, cantidad); }
+    public void setEstado(String estado) { this.estado = estado; }
 
-    public boolean isCuponRapidez() {
-        return cuponRapidez;
-    }
 
-    public String getEstado() {
-        return estado;
-    }
+    @Override
+    public int compareTo(Pedido otro) {
 
-    public LocalDateTime getFechaCreacion() {
-        return fechaCreacion;
-    }
 
-    public Map<String, Integer> getProductos() {
-        return productos;
-    }
+        if (this.cuponRapidez && !otro.cuponRapidez) {
+            return -1;
+        }
 
-    public void agregarProducto(String nombre, int cantidad) {
-        productos.put(nombre, cantidad);
-    }
 
-    public void setEstado(String estado) {
-        this.estado = estado;
+        if (!this.cuponRapidez && otro.cuponRapidez) {
+            return 1;
+        }
+
+        return this.fechaCreacion.compareTo(otro.fechaCreacion);
     }
 
     @Override
-    public String toString() {
-        return "Pedido{" +
-                "id=" + id +
-                ", cliente='" + cliente + '\'' +
-                ", cuponRapidez=" + cuponRapidez +
-                ", estado='" + estado + '\'' +
-                ", fechaCreacion=" + fechaCreacion +
-                ", productos=" + productos +
-                '}';
+    public boolean equals(Object object) {
+        if (this == object) return true;
+        if (!(object instanceof Pedido pedido)) return false;
+        return cuponRapidez == pedido.cuponRapidez && Objects.equals(id, pedido.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, cuponRapidez);
     }
 }

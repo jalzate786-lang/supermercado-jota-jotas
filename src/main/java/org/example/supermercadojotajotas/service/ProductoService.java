@@ -17,10 +17,7 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.LocalDateTime;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class ProductoService {
@@ -36,6 +33,7 @@ public class ProductoService {
     private RegistroEntregaRepository registroEntregaRepository;
 
     public ProductoService(
+            //llamo a la clases que heredean de jparepository
             ProductoRepository productoRepository,
             PedidoRepository pedidoRepository,
             RegistroEntregaRepository registroEntregaRepository) {
@@ -43,14 +41,14 @@ public class ProductoService {
         this.productoRepository = productoRepository;
         this.pedidoRepository = pedidoRepository;
         this.registroEntregaRepository = registroEntregaRepository;
-
+        //inicializo cada clase
         inventario = new Inventario();
         colaEntregas = new ColaEntregas();
         carrito = new Carrito();
         registros = new RegistroEntregas();
         logEntrega = new LogEntrega();
 
-        inventario.cargarProductos(productoRepository.findAll());
+        inventario.cargarProductos(new LinkedList<>(productoRepository.findAll()));
 
         registros.cargarRegistros(registroEntregaRepository.findAll());
 
@@ -63,7 +61,7 @@ public class ProductoService {
     }
 
     public boolean registrarProducto(Producto producto) {
-
+        //si existe algun error en el formulario que no permita el ingreso del producto
         if (producto == null ||
                 producto.getNombre() == null ||
                 producto.getNombre().trim().isEmpty() ||
@@ -81,7 +79,7 @@ public class ProductoService {
                 producto.getPrecio(),
                 producto.getStock()
         );
-
+        //de pasar las pruebas se agrega a la base de datos
         Producto guardado = productoRepository.save(nuevoProducto);
 
         return inventario.agregarProducto(guardado);
@@ -119,7 +117,7 @@ public class ProductoService {
         return inventario;
     }
 
-    public Collection<Producto> listarProductos() {
+    public LinkedList<Producto> listarProductos() {
         return inventario.listarProductos();
     }
 
@@ -132,7 +130,7 @@ public class ProductoService {
         }
 
         int stock = inventario.buscarStock(nombreOficial);
-
+        //si el producto esta correcto que se agregue al carrito
         return carrito.agregarProducto(
                 nombreOficial,
                 cantidad,

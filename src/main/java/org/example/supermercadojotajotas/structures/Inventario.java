@@ -5,6 +5,7 @@ import org.example.supermercadojotajotas.model.Producto;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedList;
 
 public class Inventario {
 
@@ -17,7 +18,7 @@ public class Inventario {
     }
 
     public boolean agregarProducto(Producto producto) {
-
+        //verificaciones de seguridad para que el producto entre con los valores correctos
         if (producto == null ||
                 producto.getNombre() == null ||
                 producto.getNombre().trim().isEmpty() ||
@@ -33,7 +34,7 @@ public class Inventario {
         }
 
         producto.setNombre(nombre);
-
+        //agrega a cada hashmap si paso las pruebas de seguridad
         stock.put(nombre, producto.getStock());
         productos.put(nombre, producto);
 
@@ -91,12 +92,11 @@ public class Inventario {
         return stock;
     }
 
-    public Collection<Producto> listarProductos() {
-        return productos.values();
+    public LinkedList<Producto> listarProductos() {
+        return new LinkedList<>(productos.values());
     }
 
-    public void cargarProductos(Collection<Producto> productosGuardados) {
-
+    public void cargarProductos(LinkedList<Producto> productosGuardados) {
         stock.clear();
         productos.clear();
 
