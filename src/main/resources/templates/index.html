@@ -1,21 +1,25 @@
-
 <!DOCTYPE html>
+<!-- define el idioma y habilita thymeleaf en el documento -->
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <title>Supermercado Jota Jota</title>
 
+    <!-- estilos visuales de la pagina -->
     <style>
+        /* estilo general del cuerpo */
         body {
             font-family: Arial, sans-serif;
             margin: 40px;
             background: #f4f4f4;
         }
 
+        /* color de los titulos */
         h1, h2 {
             color: #263238;
         }
 
+        /* contenedor blanco para cada modulo */
         section {
             background: white;
             padding: 20px;
@@ -23,11 +27,13 @@
             border-radius: 8px;
         }
 
+        /* espaciado de campos y botones */
         input, button {
             padding: 9px;
             margin: 5px;
         }
 
+        /* diseno de los botones */
         button {
             cursor: pointer;
             background: #263238;
@@ -36,22 +42,26 @@
             border-radius: 4px;
         }
 
+        /* formato de las tablas */
         table {
             width: 100%;
             border-collapse: collapse;
         }
 
+        /* bordes y relleno de celdas */
         th, td {
             padding: 12px;
             border-bottom: 1px solid #ddd;
             text-align: left;
         }
 
+        /* estilo para alertas del sistema */
         .mensaje {
             color: #176b35;
             font-weight: bold;
         }
 
+        /* contenedor del buscador con autocompletado */
         .buscador {
             position: relative;
             max-width: 350px;
@@ -61,6 +71,7 @@
             width: 90%;
         }
 
+        /* lista desplegable de sugerencias */
         .sugerencias {
             position: absolute;
             top: 100%;
@@ -74,6 +85,7 @@
             overflow-y: auto;
         }
 
+        /* botones dentro de las sugerencias */
         .sugerencias button {
             display: block;
             width: 100%;
@@ -89,6 +101,7 @@
             background: #eeeeee;
         }
 
+        /* texto pequeno de guia */
         .ayuda {
             color: #666;
             font-size: 13px;
@@ -98,16 +111,19 @@
 
 <body>
 
+<!-- encabezado principal -->
 <h1>Supermercado Jota Jota</h1>
 <p>Administración de inventario, compras y entregas</p>
 
+<!-- muestra el mensaje de confirmacion o error si existe -->
 <p class="mensaje" th:if="${mensaje}" th:text="${mensaje}"></p>
 
+<!-- seccion para crear nuevos productos sin pedir id -->
 <section>
     <h2>Registrar producto</h2>
 
+    <!-- envia los datos del producto al controlador por post -->
     <form action="/productos/registrar" method="post">
-        <input type="number" name="id" placeholder="ID" required>
         <input type="text" name="nombre" placeholder="Nombre" required>
 
         <input type="number" name="precio" placeholder="Precio"
@@ -120,6 +136,7 @@
     </form>
 </section>
 
+<!-- seccion que muestra la tabla de productos disponibles -->
 <section>
     <h2>Inventario</h2>
 
@@ -134,6 +151,7 @@
         </thead>
 
         <tbody>
+        <!-- recorre la lista de productos y pinta cada fila -->
         <tr th:each="producto : ${productos}">
             <td th:text="${producto.id}"></td>
             <td th:text="${producto.nombre}"></td>
@@ -143,11 +161,13 @@
         </tbody>
     </table>
 
+    <!-- aviso cuando la lista de productos esta vacia -->
     <p th:if="${#lists.isEmpty(productos)}">
         Todavía no hay productos registrados.
     </p>
 </section>
 
+<!-- seccion para buscar productos y sumarlos al carrito -->
 <section>
     <h2>Agregar al carrito</h2>
 
@@ -155,6 +175,7 @@
 
         <div class="buscador">
 
+            <!-- campo de texto para filtrar productos -->
             <input type="text"
                    id="busquedaProducto"
                    name="nombre"
@@ -162,6 +183,7 @@
                    autocomplete="off"
                    required>
 
+            <!-- opciones ocultas que aparecen al escribir -->
             <div class="sugerencias" id="listaSugerencias" hidden>
 
                 <button type="button"
@@ -178,6 +200,7 @@
             Escribe parte del nombre y selecciona el producto.
         </p>
 
+        <!-- cantidad de unidades a comprar -->
         <input type="number"
                name="cantidad"
                placeholder="Cantidad"
@@ -188,6 +211,7 @@
     </form>
 </section>
 
+<!-- seccion que muestra el carrito actual y confirma la compra -->
 <section>
     <h2>Carrito de compras</h2>
 
@@ -200,6 +224,7 @@
         </thead>
 
         <tbody>
+        <!-- recorre el mapa del carrito mostrando clave y valor -->
         <tr th:each="producto : ${carrito.productos}">
             <td th:text="${producto.key}"></td>
             <td th:text="${producto.value}"></td>
@@ -207,15 +232,18 @@
         </tbody>
     </table>
 
+    <!-- aviso si el carrito no tiene elementos -->
     <p th:if="${carrito.estaVacio()}">
         El carrito está vacío.
     </p>
 
+    <!-- formulario para finalizar la compra y encolar el pedido -->
     <form action="/carrito/confirmar" method="post">
 
         <input type="text" name="cliente"
                placeholder="Nombre del cliente" required>
 
+        <!-- casilla opcional para dar prioridad al pedido -->
         <label>
             <input type="checkbox" name="cuponRapidez" value="true">
             Usar cupón de rapidez
@@ -227,6 +255,7 @@
     </form>
 </section>
 
+<!-- seccion que lista la cola de prioridad de pedidos en espera -->
 <section>
     <h2>Pedidos pendientes</h2>
 
@@ -242,6 +271,7 @@
         </thead>
 
         <tbody>
+        <!-- recorre los pedidos ordenados por prioridad -->
         <tr th:each="pedido : ${pedidos}">
             <td th:text="${pedido.id}"></td>
             <td th:text="${pedido.cliente}"></td>
@@ -256,11 +286,13 @@
         No hay pedidos pendientes.
     </p>
 
+    <!-- boton para despachar el pedido mas prioritario -->
     <form action="/pedidos/procesar" method="post">
         <button type="submit">Procesar siguiente pedido</button>
     </form>
 </section>
 
+<!-- seccion con el historial de pedidos ya despachados -->
 <section>
     <h2>Registro de entregas</h2>
 
@@ -275,6 +307,7 @@
         </thead>
 
         <tbody>
+        <!-- recorre el historial de entregas realizadas -->
         <tr th:each="registro : ${registros}">
             <td th:text="${registro.pedidoId}"></td>
             <td th:text="${registro.productos}"></td>
@@ -289,16 +322,20 @@
     </p>
 </section>
 
+<!-- logica javascript para el autocompletado del buscador -->
 <script>
+    // obtiene referencias a los elementos del buscador
     const busqueda = document.getElementById("busquedaProducto");
     const lista = document.getElementById("listaSugerencias");
     const opciones = lista.querySelectorAll("button");
 
+    // filtra las opciones cada vez que el usuario escribe
     busqueda.addEventListener("input", function () {
 
         const texto = busqueda.value.trim().toLowerCase();
         let coincidencias = 0;
 
+        // compara el texto escrito con cada producto
         opciones.forEach(function (opcion) {
 
             const nombre = opcion.dataset.nombre.toLowerCase();
@@ -311,9 +348,11 @@
             }
         });
 
+        // oculta la lista si no hay coincidencias
         lista.hidden = coincidencias === 0;
     });
 
+    // rellena el campo al hacer clic en una sugerencia
     opciones.forEach(function (opcion) {
 
         opcion.addEventListener("click", function () {
@@ -323,6 +362,7 @@
         });
     });
 
+    // cierra la lista si se hace clic fuera del buscador
     document.addEventListener("click", function (evento) {
 
         if (!evento.target.closest(".buscador")) {

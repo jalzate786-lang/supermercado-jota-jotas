@@ -10,7 +10,7 @@ import jakarta.persistence.Table;
 @Entity
 @Table(name = "productos")
 public class Producto {
-
+    //inicializacion de las variables y de las tablas de la base de datos
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;

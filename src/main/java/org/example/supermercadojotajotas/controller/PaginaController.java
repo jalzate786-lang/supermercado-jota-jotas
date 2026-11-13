@@ -17,7 +17,7 @@ public class PaginaController {
     public PaginaController(ProductoService productoService) {
         this.productoService = productoService;
     }
-
+    //empieza generando las tablas de productos,carritos,pedido,registros
     @GetMapping("/")
     public String inicio(
             @RequestParam(required = false) String mensaje,
@@ -34,15 +34,14 @@ public class PaginaController {
 
         return "index";
     }
-
+    //captura los datos enviados desde el front
     @PostMapping("/productos/registrar")
     public String registrarProducto(
-            @RequestParam int id,
             @RequestParam String nombre,
             @RequestParam double precio,
             @RequestParam int stock) {
 
-        Producto producto = new Producto(id, nombre, precio, stock);
+        Producto producto = new Producto(0, nombre, precio, stock);
 
         if (productoService.registrarProducto(producto)) {
             return "redirect:/?mensaje=Producto+registrado";
@@ -50,7 +49,7 @@ public class PaginaController {
 
         return "redirect:/?mensaje=Datos+invalidos";
     }
-
+    //agrega al carrito e indica si se pudo añadir o no por medio de mensaje en pantalla
     @PostMapping("/carrito/agregar")
     public String agregarAlCarrito(
             @RequestParam String nombre,
@@ -62,7 +61,7 @@ public class PaginaController {
 
         return "redirect:/?mensaje=No+se+pudo+agregar+el+producto";
     }
-
+    //se crea el pedido y se examina si tiene un cupo de rapidez asignado
     @PostMapping("/carrito/confirmar")
     public String confirmarCompra(
             @RequestParam String cliente,
@@ -74,7 +73,7 @@ public class PaginaController {
 
         return "redirect:/?mensaje=No+se+pudo+confirmar+la+compra";
     }
-
+    // da paso al siguiente pedido
     @PostMapping("/pedidos/procesar")
     public String procesarPedido() {
 

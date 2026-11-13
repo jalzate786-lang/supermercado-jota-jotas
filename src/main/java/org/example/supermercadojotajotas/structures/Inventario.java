@@ -79,6 +79,8 @@ public class Inventario {
         }
 
         stock.put(nombreOficial, nuevoStock);
+        //ingresa a la clase del producto en cuestion , y luego cambia solo el parametro stcock
+        //recordemos que el hashmap productos recibe HashMap<String, Producto>
         productos.get(nombreOficial).setStock(nuevoStock);
 
         return true;
@@ -88,9 +90,7 @@ public class Inventario {
         return buscarNombre(nombre) != null;
     }
 
-    public HashMap<String, Integer> getStock() {
-        return stock;
-    }
+
 
     public LinkedList<Producto> listarProductos() {
         return new LinkedList<>(productos.values());
@@ -105,7 +105,8 @@ public class Inventario {
         }
 
         for (Producto producto : productosGuardados) {
-
+                //se itera la lista productosGuardados
+            // se verifica la seguridad del nombre y del stock
             if (producto != null &&
                     producto.getNombre() != null &&
                     !producto.getNombre().trim().isEmpty() &&
@@ -113,7 +114,7 @@ public class Inventario {
                     producto.getStock() >= 0) {
 
                 String nombre = producto.getNombre().trim();
-
+                //la primera vez que se añade el nombre de cada producto, si ya estaba registrado no hace nada
                 if (!existeProducto(nombre)) {
 
                     producto.setNombre(nombre);

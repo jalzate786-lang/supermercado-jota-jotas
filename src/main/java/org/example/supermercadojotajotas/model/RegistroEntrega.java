@@ -20,7 +20,7 @@ import java.util.Map;
 @Entity
 @Table(name = "registros_entrega")
 public class RegistroEntrega {
-
+    //inicializacion de las variables y de las tablas de la base de datos
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;

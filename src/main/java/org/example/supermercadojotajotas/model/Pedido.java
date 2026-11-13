@@ -9,7 +9,7 @@ import java.util.Objects;
 @Entity
 @Table(name = "pedidos")
 public class Pedido implements Comparable<Pedido> {
-
+    //inicializacion de las variables y de las tablas de la base de datos
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
@@ -49,16 +49,16 @@ public class Pedido implements Comparable<Pedido> {
     @Override
     public int compareTo(Pedido otro) {
 
-
+        //si el pedido actual tiene un cupon de rapidez y el otro no, el actual se pone adelante en la fila
         if (this.cuponRapidez && !otro.cuponRapidez) {
             return -1;
         }
 
-
+        //si el pedido actual no tiene pero el otro si, el otro se pone adelante en la fila
         if (!this.cuponRapidez && otro.cuponRapidez) {
             return 1;
         }
-
+        //si ninguno de los tiene entonces desempata por quien pidio primero
         return this.fechaCreacion.compareTo(otro.fechaCreacion);
     }
 

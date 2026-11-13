@@ -48,10 +48,11 @@ public class ProductoService {
         registros = new RegistroEntregas();
         logEntrega = new LogEntrega();
 
+        //extrae todos los productos de la base de datos y los carga en el inventario
         inventario.cargarProductos(new LinkedList<>(productoRepository.findAll()));
-
+        //historial de entregas
         registros.cargarRegistros(registroEntregaRepository.findAll());
-
+        //mete en la cola de prioridad solo los pedidos que esten en el estado "espera"
         for (Pedido pedido : pedidoRepository.findAll()) {
 
             if ("ESPERA".equals(pedido.getEstado())) {
@@ -89,32 +90,9 @@ public class ProductoService {
         return inventario.buscarStock(nombre);
     }
 
-    public boolean actualizarStock(String nombre, int nuevoStock) {
-
-        String nombreOficial = inventario.buscarNombre(nombre);
-
-        if (nombreOficial == null || nuevoStock < 0) {
-            return false;
-        }
-
-        Producto producto = productoRepository.findByNombre(nombreOficial);
-
-        if (producto == null) {
-            return false;
-        }
-
-        producto.setStock(nuevoStock);
-        productoRepository.save(producto);
-
-        return inventario.actualizarStock(nombreOficial, nuevoStock);
-    }
 
     public boolean existeProducto(String nombre) {
         return inventario.existeProducto(nombre);
-    }
-
-    public Inventario getInventario() {
-        return inventario;
     }
 
     public LinkedList<Producto> listarProductos() {
@@ -143,11 +121,6 @@ public class ProductoService {
     }
 
     @Transactional
-    public boolean confirmarCompra() {
-        return confirmarCompra("Cliente", false);
-    }
-
-    @Transactional
     public boolean confirmarCompra(String cliente, boolean cuponRapidez) {
 
         if (carrito.estaVacio() ||
@@ -155,15 +128,15 @@ public class ProductoService {
                 cliente.trim().isEmpty()) {
             return false;
         }
-
+        //crea un nuevo hashmap para reunir a los productos unico de la compra
         Map<String, Producto> productosCompra = new HashMap<>();
 
         for (String nombre : carrito.getProductos().keySet()) {
-
+            //verifica la cantidad que quiere el cliente
             int cantidad = carrito.getProductos().get(nombre);
-
+            //
             Producto producto = productoRepository.findByNombre(nombre);
-
+            //verifica que la cantidad que quiere el cliente no supere el stock
             if (!inventario.existeProducto(nombre) ||
                     producto == null ||
                     cantidad <= 0 ||
@@ -173,18 +146,19 @@ public class ProductoService {
 
             productosCompra.put(nombre, producto);
         }
-
+        //se crea el pedido
         Pedido pedido = new Pedido(cliente, cuponRapidez);
         Map<String, Integer> nuevosStocks = new HashMap<>();
-
+        //se desencola el hasmap anterior
         for (String nombre : carrito.getProductos().keySet()) {
-
+            //se obtiene la cantidad que quiere de ese producto
             int cantidad = carrito.getProductos().get(nombre);
-
+            //se verifica cual es el producto
             Producto producto = productosCompra.get(nombre);
-
+            //lo agrega al pedido
             pedido.agregarProducto(nombre, cantidad);
 
+            //hace la resta en el stock del producto seleccionado y a su vez se actualiza la base de datos
             int nuevoStock = producto.getStock() - cantidad;
 
             producto.setStock(nuevoStock);
@@ -195,6 +169,8 @@ public class ProductoService {
 
         Pedido pedidoGuardado = pedidoRepository.save(pedido);
 
+        //este bloque solo funciona si la etiqueta @transaccional no reporto ningun error
+        // y hace que se sincronice el resto del sistema con los cambios realizados
         ejecutarDespuesDeConfirmar(() -> {
 
             for (String nombre : nuevosStocks.keySet()) {
@@ -208,23 +184,7 @@ public class ProductoService {
         return true;
     }
 
-    @Transactional
-    public void agregarPedido(Pedido pedido) {
 
-        if (pedido == null) {
-            return;
-        }
-
-        Pedido pedidoGuardado = pedidoRepository.save(pedido);
-
-        ejecutarDespuesDeConfirmar(() ->
-                colaEntregas.agregarPedido(pedidoGuardado)
-        );
-    }
-
-    public Pedido verSiguientePedido() {
-        return colaEntregas.verSiguiente();
-    }
 
     public List<Pedido> listarPedidosEnEspera() {
         return colaEntregas.listarPedidos();
@@ -234,17 +194,17 @@ public class ProductoService {
     public Pedido procesarSiguientePedido() {
 
         Pedido pedido = colaEntregas.verSiguiente();
-
+        //si depues de el no hay nadie quiere decir que esta de primero
         if (pedido == null) {
             return null;
         }
-
+        //se le cambia el estado porque ya se atendio y se cambia a en "camino"
         pedido.setEstado("EN CAMINO");
 
         Pedido pedidoGuardado = pedidoRepository.save(pedido);
 
         LocalDateTime fechaCambio = LocalDateTime.now();
-
+        //crea un nuevo registro con la informacion de este pedido
         RegistroEntrega registro = new RegistroEntrega(
                 pedidoGuardado.getId(),
                 new HashMap<>(pedidoGuardado.getProductos()),
@@ -254,7 +214,7 @@ public class ProductoService {
 
         RegistroEntrega registroGuardado =
                 registroEntregaRepository.save(registro);
-
+    //se limpia de la cola, se agrega el registro, y se registra el log
         ejecutarDespuesDeConfirmar(() -> {
 
             colaEntregas.eliminarPedido(pedidoGuardado.getId());
@@ -267,29 +227,28 @@ public class ProductoService {
         return pedidoGuardado;
     }
 
-    public int cantidadPedidos() {
-        return colaEntregas.cantidadPedidos();
-    }
 
     public RegistroEntregas getRegistros() {
         return registros;
     }
 
+
     private void ejecutarDespuesDeConfirmar(Runnable accion) {
-
+        // verifica si hay una transaccion activa con la base de datos
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
-
+            // pone en espera la accion hasta que la base de datos termine
             TransactionSynchronizationManager.registerSynchronization(
                     new TransactionSynchronization() {
-
                         @Override
+                        // se activa solo cuando los datos ya se guardaron en el disco
                         public void afterCommit() {
+                            // ejecuta los cambios en las estructuras de memoria
                             accion.run();
                         }
                     }
             );
-
         } else {
+            // si no hay transaccion activa ejecuta los cambios de inmediato
             accion.run();
         }
     }
