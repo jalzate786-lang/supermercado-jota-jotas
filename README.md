@@ -14,7 +14,7 @@ Base de Datos: PostgreSQL
 
 ORM: Hibernate / Jakarta Persistence API (JPA)
 
-Gestor de Dependencias: Maven
+Gestor de Dependencias: gradle
 
 2. Arquitectura del Sistema
 
